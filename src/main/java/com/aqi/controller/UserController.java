@@ -1,6 +1,6 @@
 package com.aqi.controller;
 
-import com.aqi.dto.user.UpdateLocationRequest;
+import com.aqi.dto.user.UpdateCityRequest;
 import com.aqi.dto.user.UserDto;
 import com.aqi.service.UserService;
 import jakarta.validation.Valid;
@@ -17,14 +17,12 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser() {
-        UserDto user = userService.getCurrentUser();
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getCurrentUser());
     }
 
-    @PutMapping("/me")
-    public ResponseEntity<UserDto> updateLocation(@Valid @RequestBody UpdateLocationRequest request) {
-        UserDto user = userService.updateLocation(request);
-        return ResponseEntity.ok(user);
+    @PutMapping("/me/city")
+    public ResponseEntity<UserDto> updateUserCity(@Valid @RequestBody UpdateCityRequest request) { // <-- CHANGED
+        return ResponseEntity.ok(userService.updateCity(request));
     }
 }
 

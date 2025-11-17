@@ -1,13 +1,15 @@
 package com.aqi.scheduler;
 
 import com.aqi.entity.AqiDataPoint;
+import com.aqi.entity.User;
 import com.aqi.repository.AqiDataPointRepository;
-import com.aqi.service.OpenWeatherApiClient;
+import com.aqi.repository.UserRepository;
+import com.aqi.service.NotificationService;
+import com.aqi.service.WaqiApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,37 +17,57 @@ import java.util.Optional;
 public class AqiDataPoller {
 
     @Autowired
-    private OpenWeatherApiClient apiClient;
+    private WaqiApiClient apiClient;
 
     @Autowired
     private AqiDataPointRepository repository;
 
-    // Define the list of cities we want data for
-    private static final List<String> CITIES = List.of("Lahore", "Karachi", "Islamabad", "Rawalpindi", "Faisalabad");
+    @Autowired
+    private UserRepository userRepository;
 
-    /**
-     * Runs every 15 minutes (900_000 milliseconds).
-     * We'll also run it once on startup for testing.
-     */
+    @Autowired
+    private NotificationService notificationService;
+
+    // Define our "unhealthy" threshold
+    private static final double AQI_ALERT_THRESHOLD = 150.0;
+
+    // Define the list of cities we want data for
+    private static final List<String> CITIES = List.of("Lahore", "Karachi", "Islamabad", "Rawalpindi", "Peshawar", "Hyderabad");
+
+//    Runs every 15 minutes (900_000 milliseconds)
     @Scheduled(fixedRate = 900000, initialDelay = 5000) // 15 min rate, 5 sec delay
     public void pollAqiData() {
-        System.out.println("--- [AQI Poller] Starting to poll AQI Data for all cities ---");
+        System.out.println("--- [AQI Poller] Starting to poll AQI Data (using WAQI) ---");
 
         for (String city : CITIES) {
             try {
+                // Call the new, simpler client
                 Optional<Integer> aqiOpt = apiClient.getAqiForCity(city);
 
                 if (aqiOpt.isPresent()) {
-                    // OpenWeatherMap returns 1-5. We'll convert this to the 0-500 scale.
-                    double aqiValue = convertAqiScale(aqiOpt.get());
+                    // We get the REAL value. No more conversion.
+                    double aqiValue = aqiOpt.get().doubleValue();
 
                     AqiDataPoint dataPoint = new AqiDataPoint();
-                    dataPoint.setCity(city); // <-- Save with the CORRECT city name
+                    dataPoint.setCity(city);
                     dataPoint.setAqiValue(aqiValue);
-                    // The timestamp is set by @PrePersist in your entity, which is great
 
                     repository.save(dataPoint);
                     System.out.println("[AQI Poller] Successfully saved AQI for " + city + ": " + aqiValue);
+
+                    if (aqiValue > AQI_ALERT_THRESHOLD) {
+                        System.out.println("[AQI Poller] AQI for " + city + " is " + aqiValue + ". Sending alerts.");
+
+                        // Find all users who have set this as their home city
+                        List<User> usersToAlert = userRepository.findAllByCityIgnoreCase(city);
+
+                        // Loop and send emails
+                        for (User user : usersToAlert) {
+                            notificationService.sendAqiAlert(user.getEmail(), city, aqiValue);
+                        }
+                        System.out.println("[AQI Poller] Sent " + usersToAlert.size() + " alerts for " + city + ".");
+                    }
+
                 } else {
                     System.err.println("[AQI Poller] Could not retrieve AQI data for " + city);
                 }
@@ -55,19 +77,4 @@ public class AqiDataPoller {
         }
     }
 
-    /**
-     * Converts OpenWeather's 1-5 scale to the standard 0-500 AQI scale.
-     * 1=Good (0-50), 2=Fair (51-100), 3=Moderate (101-150),
-     * 4=Poor (151-200), 5=Very Poor (201-500)
-     */
-    private double convertAqiScale(int aqi) {
-        switch (aqi) {
-            case 1: return 25;  // Mid-point of "Good"
-            case 2: return 75;  // Mid-point of "Fair"
-            case 3: return 125; // Mid-point of "Moderate"
-            case 4: return 175; // Mid-point of "Poor"
-            case 5: return 250; // Mid-point of "Very Poor"
-            default: return 0;
-        }
-    }
 }

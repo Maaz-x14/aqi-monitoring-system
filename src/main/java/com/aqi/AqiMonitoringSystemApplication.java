@@ -21,6 +21,7 @@ public class AqiMonitoringSystemApplication {
         System.setProperty("MAIL_PASSWORD", dotenv.get("MAIL_PASSWORD"));
         System.setProperty("JWT_SECRET", dotenv.get("JWT_SECRET"));
         System.setProperty("OPEN_WEATHER_KEY", dotenv.get("OPEN_WEATHER_KEY"));
+        System.setProperty("WAQI_API_KEY", dotenv.get("WAQI_API_KEY"));
         
         SpringApplication.run(AqiMonitoringSystemApplication.class, args);
 	}

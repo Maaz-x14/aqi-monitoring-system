@@ -30,6 +30,9 @@ public class AuthService {
     @Autowired
     private com.aqi.security.JwtTokenProvider tokenProvider;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Transactional
     public JwtResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -41,6 +44,8 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
         user = userRepository.save(user);
+
+        notificationService.sendWelcomeEmail(user.getEmail());
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())

@@ -10,8 +10,7 @@ import lombok.NoArgsConstructor;
 public class UserDto {
     private Long id;
     private String email;
-    private Double latitude;
-    private Double longitude;
+    private String city;
 }
 
 
