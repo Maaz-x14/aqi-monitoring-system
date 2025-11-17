@@ -11,11 +11,13 @@ import java.util.List;
 
 @Repository
 public interface AqiDataPointRepository extends JpaRepository<AqiDataPoint, Long> {
-    List<AqiDataPoint> findByCityOrderByTimestampDesc(String city);
-    
-    @Query("SELECT a FROM AqiDataPoint a WHERE a.city = :city AND a.timestamp >= :startTime ORDER BY a.timestamp DESC")
-    List<AqiDataPoint> findByCityAndTimestampAfter(@Param("city") String city, @Param("startTime") LocalDateTime startTime);
-    
-    AqiDataPoint findFirstByCityOrderByTimestampDesc(String city);
-}
 
+    // Add "IgnoreCase"
+    List<AqiDataPoint> findByCityIgnoreCaseOrderByTimestampDesc(String city);
+
+    @Query("SELECT a FROM AqiDataPoint a WHERE LOWER(a.city) = LOWER(:city) AND a.timestamp >= :startTime ORDER BY a.timestamp DESC")
+    List<AqiDataPoint> findByCityAndTimestampAfter(@Param("city") String city, @Param("startTime") LocalDateTime startTime);
+
+    // Add "IgnoreCase"
+    AqiDataPoint findFirstByCityIgnoreCaseOrderByTimestampDesc(String city);
+}

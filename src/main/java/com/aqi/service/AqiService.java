@@ -13,17 +13,17 @@ import java.util.stream.Collectors;
 
 @Service
 public class AqiService {
-    
+
     @Autowired
     private AqiDataPointRepository aqiDataPointRepository;
 
     public AqiDataDto getCurrentAqi(String city) {
-        AqiDataPoint dataPoint = aqiDataPointRepository.findFirstByCityOrderByTimestampDesc(city);
-        
+        AqiDataPoint dataPoint = aqiDataPointRepository.findFirstByCityIgnoreCaseOrderByTimestampDesc(city);
+
         if (dataPoint == null) {
             throw new ResourceNotFoundException("No AQI data found for city: " + city);
         }
-        
+
         return new AqiDataDto(
                 dataPoint.getId(),
                 dataPoint.getCity(),
@@ -33,8 +33,8 @@ public class AqiService {
     }
 
     public List<AqiDataDto> getAqiHistory(String city) {
-        List<AqiDataPoint> dataPoints = aqiDataPointRepository.findByCityOrderByTimestampDesc(city);
-        
+        List<AqiDataPoint> dataPoints = aqiDataPointRepository.findByCityIgnoreCaseOrderByTimestampDesc(city);
+
         return dataPoints.stream()
                 .map(dp -> new AqiDataDto(dp.getId(), dp.getCity(), dp.getAqiValue(), dp.getTimestamp()))
                 .collect(Collectors.toList());
@@ -42,10 +42,12 @@ public class AqiService {
 
     public List<AqiDataDto> getAqiHistory(String city, LocalDateTime startTime) {
         List<AqiDataPoint> dataPoints = aqiDataPointRepository.findByCityAndTimestampAfter(city, startTime);
-        
+
         return dataPoints.stream()
                 .map(dp -> new AqiDataDto(dp.getId(), dp.getCity(), dp.getAqiValue(), dp.getTimestamp()))
                 .collect(Collectors.toList());
     }
 }
+
+
 

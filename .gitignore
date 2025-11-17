@@ -58,3 +58,6 @@ build/
 hs_err_pid*
 replay_pid*
 >>>>>>> f774cb10e5ad27edbc5cb7f60a54f2dad6a5caa2
+# Ignore sensitive config
+src/main/resources/application.properties
+.env

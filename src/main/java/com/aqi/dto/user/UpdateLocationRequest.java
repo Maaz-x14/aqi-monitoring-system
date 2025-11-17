@@ -12,3 +12,5 @@ public class UpdateLocationRequest {
     private Double longitude;
 }
 
+
+

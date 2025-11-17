@@ -25,3 +25,5 @@ public class User {
     private Double longitude;
 }
 
+
+
