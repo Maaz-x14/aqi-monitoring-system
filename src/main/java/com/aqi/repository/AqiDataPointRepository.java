@@ -21,3 +21,4 @@ public interface AqiDataPointRepository extends JpaRepository<AqiDataPoint, Long
     // Add "IgnoreCase"
     AqiDataPoint findFirstByCityIgnoreCaseOrderByTimestampDesc(String city);
 }
+

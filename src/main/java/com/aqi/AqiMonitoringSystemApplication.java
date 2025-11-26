@@ -24,6 +24,8 @@ public class AqiMonitoringSystemApplication {
         System.setProperty("WAQI_API_KEY", dotenv.get("WAQI_API_KEY"));
         
         SpringApplication.run(AqiMonitoringSystemApplication.class, args);
+        // Color Scheme
+        // Green -> Yellow -> Orange -> Red -> Purple -> Maroon
 	}
 
 }
