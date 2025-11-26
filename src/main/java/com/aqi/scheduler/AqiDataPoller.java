@@ -9,6 +9,7 @@ import com.aqi.service.OpenMeteoApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import java.time.temporal.ChronoUnit;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -82,13 +83,27 @@ public class AqiDataPoller {
                     dataPoint.setForecast(false); // This is real-time data
 
                     repository.save(dataPoint);
-                    System.out.printf("Saved %s: AQI=%.0f\n", location.name, data.aqi());
+                    System.out.printf("Saved %s: AQI=%.0f\n", location.name(), data.aqi());
 
                     if (data.aqi() > AQI_ALERT_THRESHOLD) {
-                        List<User> usersToAlert = userRepository.findAllByCityIgnoreCase(location.name);
+                        List<User> usersToAlert = userRepository.findAllByCityIgnoreCase(location.name());
+                        int sentCount = 0;
+
                         for (User user : usersToAlert) {
-                            notificationService.sendAqiAlert(user.getEmail(), location.name, data.aqi());
+                            // Check if we sent an alert in the last 24 hours
+                            boolean shouldAlert = user.getLastAlertSent() == null ||
+                                    ChronoUnit.HOURS.between(user.getLastAlertSent(), LocalDateTime.now()) >= 24;
+
+                            if (shouldAlert) {
+                                notificationService.sendAqiAlert(user.getEmail(), location.name(), data.aqi());
+
+                                // Update the timestamp
+                                user.setLastAlertSent(LocalDateTime.now());
+                                userRepository.save(user);
+                                sentCount++;
+                            }
                         }
+                        System.out.println("[AQI Poller] Sent " + sentCount + " alerts for " + location.name());
                     }
                 }
             } catch (Exception e) {

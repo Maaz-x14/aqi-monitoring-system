@@ -22,6 +22,9 @@ public class User {
 
     @Column(nullable = true)
     private String city;
+
+    @Column(name = "last_alert_sent")
+    private java.time.LocalDateTime lastAlertSent;
 }
 
 
