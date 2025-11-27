@@ -6,7 +6,9 @@ import com.aqi.entity.AqiDataPoint;
 import com.aqi.exception.ResourceNotFoundException;
 import com.aqi.repository.AqiDataPointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -83,28 +85,35 @@ public class AqiService {
     public RunRecommendationDto getRunRecommendation(String city) {
         // 1. Get the Forecast
         List<AqiDataDto> forecast = getForecast(city);
+
+        // --- FIX: Check for empty data caused by API failure ---
+        if (forecast.isEmpty()) {
+            // Throw a 503 Service Unavailable instead of 404
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "External weather service is currently unreachable.");
+        }
+        // -------------------------------------------------------
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime tomorrow = now.plusHours(24);
 
         // 2. Filter for the next 24 hours
-        AqiDataDto bestSlot = forecast.stream()
+        return forecast.stream()
                 .filter(d -> d.getTimestamp().isAfter(now) && d.getTimestamp().isBefore(tomorrow))
-                // 3. Find the minimum AQI
                 .min(Comparator.comparingDouble(AqiDataDto::getAqiValue))
-                .orElseThrow(() -> new ResourceNotFoundException("Could not generate recommendation"));
+                .map(bestSlot -> {
+                    String message = String.format("Best time to go outside: %s at %s (AQI %.0f)",
+                            bestSlot.getTimestamp().getDayOfWeek(),
+                            bestSlot.getTimestamp().format(DateTimeFormatter.ofPattern("h:mm a")),
+                            bestSlot.getAqiValue());
 
-        // 4. Build the Recommendation String
-        String message = String.format("Best time to go outside: %s at %s (AQI %.0f)",
-                bestSlot.getTimestamp().getDayOfWeek(),
-                bestSlot.getTimestamp().format(DateTimeFormatter.ofPattern("h:mm a")),
-                bestSlot.getAqiValue());
-
-        return new RunRecommendationDto(
-                capitalize(city),
-                bestSlot.getTimestamp(),
-                bestSlot.getAqiValue(),
-                message
-        );
+                    return new RunRecommendationDto(
+                            capitalize(city),
+                            bestSlot.getTimestamp(),
+                            bestSlot.getAqiValue(),
+                            message
+                    );
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Could not generate recommendation based on available data"));
     }
 
     // --- HELPER: Health Advice Engine ---

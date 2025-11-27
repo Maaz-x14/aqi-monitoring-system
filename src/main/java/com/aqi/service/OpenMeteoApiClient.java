@@ -35,7 +35,7 @@ public class OpenMeteoApiClient {
                 return Optional.of(parseCurrentData(response.get("current")));
             }
         } catch (Exception e) {
-            System.err.println("[OpenMeteo] Error fetching current: " + e.getMessage());
+            System.err.println("[OpenMeteo] Critical Failure: " + e.getClass().getName());
         }
         return Optional.empty();
     }
