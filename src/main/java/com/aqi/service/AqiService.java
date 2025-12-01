@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import com.aqi.dto.aqi.AdminCityDto;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -179,5 +180,43 @@ public class AqiService {
             if (key.equalsIgnoreCase(str)) return key;
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+
+    public List<AdminCityDto> getAdminDashboardData() {
+        return CITY_COORDS.entrySet().parallelStream().map(entry -> { // Changed to entrySet() to get coords easily
+            String city = entry.getKey();
+            double[] coords = entry.getValue(); // Get coords directly
+
+            try {
+                AqiDataDto current = null;
+                try {
+                    current = getCurrentAqi(city);
+                } catch (Exception e) {
+                    System.err.println("Error getting current data for " + city);
+                }
+
+                List<AqiDataDto> forecast = null;
+                RunRecommendationDto recommendation = null;
+                try {
+                    forecast = getForecast(city);
+                    recommendation = getRunRecommendation(city);
+                } catch (Exception e) {
+                    System.err.println("Error getting forecast for " + city);
+                }
+
+                return AdminCityDto.builder()
+                        .city(city)
+                        .latitude(coords[0])  // Set Lat
+                        .longitude(coords[1]) // Set Lon
+                        .current(current)
+                        .forecast(forecast)
+                        .recommendation(recommendation)
+                        .build();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).collect(Collectors.toList());
     }
 }
