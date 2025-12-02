@@ -10,48 +10,46 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class AqiMonitoringSystemApplication {
 
     static {
-        // Fix for IPv6 issues on some networks (Railway/Local)
         System.setProperty("java.net.preferIPv4Stack", "true");
     }
 
     public static void main(String[] args) {
-        // --- BULLETPROOF ENV LOADING ---
-        // This block attempts to load .env but silently fails if it's missing.
-        // This is crucial for Production (Railway) where .env does not exist.
+        // --- ROBUST ENV LOADING ---
+        Dotenv dotenv = null;
         try {
-            Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-
-            // Load variables with priority: System Env -> .env File
-            setSystemProperty("DB_PASSWORD", dotenv);
-            setSystemProperty("MAIL_HOST", dotenv);
-            setSystemProperty("MAIL_PORT", dotenv);
-            setSystemProperty("MAIL_EMAIL", dotenv);
-            setSystemProperty("MAIL_PASSWORD", dotenv);
-            setSystemProperty("JWT_SECRET", dotenv);
-            setSystemProperty("WAQI_API_KEY", dotenv);
-            setSystemProperty("GROQ_API_KEY", dotenv);
+            // Only try to load .env. If it fails, dotenv will be null.
+            dotenv = Dotenv.configure().ignoreIfMissing().load();
         } catch (Exception e) {
-            System.out.println("⚠️ .env file not found or failed to load. Assuming Environment Variables are set by the OS (Railway/Docker).");
+            System.out.println("⚠️ .env file not found. Skipping Dotenv load. Using System Environment Variables.");
         }
-        // -------------------------------
+
+        // Helper to set properties
+        setSystemProperty("DB_PASSWORD", dotenv);
+        setSystemProperty("MAIL_HOST", dotenv);
+        setSystemProperty("MAIL_PORT", dotenv);
+        setSystemProperty("MAIL_EMAIL", dotenv);
+        setSystemProperty("MAIL_PASSWORD", dotenv);
+        setSystemProperty("JWT_SECRET", dotenv);
+        setSystemProperty("WAQI_API_KEY", dotenv);
+        setSystemProperty("GROQ_API_KEY", dotenv);
 
         SpringApplication.run(AqiMonitoringSystemApplication.class, args);
     }
 
     private static void setSystemProperty(String key, Dotenv dotenv) {
-        // Priority 1: Check if the OS already provided it (Railway/Docker)
+        // 1. Check System Env (Railway/Docker)
         String value = System.getenv(key);
 
-        // Priority 2: If not in OS, check the .env file (Localhost)
-        if (value == null || value.isEmpty()) {
+        // 2. If missing, check Dotenv (Local) - BUT ONLY IF DOTENV LOADED
+        if ((value == null || value.isEmpty()) && dotenv != null) {
             try {
                 value = dotenv.get(key);
             } catch (Exception e) {
-                // Ignore if key missing in .env
+                // Ignore missing keys in .env
             }
         }
 
-        // If found in either, set it as a Java System Property so Spring can see it
+        // 3. Set Java System Property for Spring to pick up
         if (value != null) {
             System.setProperty(key, value);
         }
