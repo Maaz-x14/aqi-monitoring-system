@@ -27,7 +27,6 @@ public class AqiService {
     @Autowired
     private OpenMeteoApiClient apiClient;
 
-    // Map of top 20 Pakistani cities
     private static final Map<String, double[]> CITY_COORDS = Map.ofEntries(
             Map.entry("Karachi", new double[]{24.8607, 67.0011}),
             Map.entry("Lahore", new double[]{31.5497, 74.3436}),
@@ -77,6 +76,7 @@ public class AqiService {
                         d.pm25(), d.pm10(), d.co(), d.no2(), d.so2(), d.o3(),
                         d.timestamp(),
                         true,
+                        // --- FIX: Added the missing 12th argument ---
                         generateHealthAdvice(d.aqi(), d.pm25(), d.o3())
                 ))
                 .collect(Collectors.toList());
@@ -111,30 +111,25 @@ public class AqiService {
                 .orElseThrow(() -> new ResourceNotFoundException("Could not generate recommendation based on available data"));
     }
 
-    // --- ADMIN DASHBOARD FEATURE (FIXED: SEQUENTIAL + DELAY) ---
     public List<AdminCityDto> getAdminDashboardData() {
-        // Use regular stream() instead of parallelStream() to avoid rate limiting
         return CITY_COORDS.entrySet().stream().map(entry -> {
             String city = entry.getKey();
             double[] coords = entry.getValue();
 
             try {
-                // Politeness delay: Wait 200ms between API calls
                 Thread.sleep(200);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
 
             try {
-                // 1. Get Current Data (Fast, from DB)
                 AqiDataDto current = null;
                 try {
                     current = getCurrentAqi(city);
                 } catch (Exception e) {
-                    // Log silently or handle if needed
+                    // silent fail
                 }
 
-                // 2. Get Forecast & Recommendation (Slow, from API)
                 List<AqiDataDto> forecast = null;
                 RunRecommendationDto recommendation = null;
                 try {
@@ -159,11 +154,9 @@ public class AqiService {
             }
         }).collect(Collectors.toList());
     }
-    // -----------------------------------------------------------
 
     private String generateHealthAdvice(Double aqi, Double pm25, Double o3) {
         if (aqi == null) return "No data available.";
-
         StringBuilder advice = new StringBuilder();
 
         if (aqi > 300) {

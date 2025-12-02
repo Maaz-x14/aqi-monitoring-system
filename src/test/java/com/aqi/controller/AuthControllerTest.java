@@ -2,20 +2,20 @@ package com.aqi.controller;
 
 import com.aqi.dto.auth.JwtResponse;
 import com.aqi.dto.auth.LoginRequest;
+import com.aqi.security.JwtAuthenticationFilter;
 import com.aqi.security.JwtTokenProvider;
 import com.aqi.security.UserDetailsServiceImpl;
-import com.aqi.security.JwtAuthenticationFilter; // Import this
 import com.aqi.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.bean.override.mockito.MockitoBean; // NEW IMPORT
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,17 +41,16 @@ class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean // CHANGED
     private AuthService authService;
 
-    @MockBean
+    @MockitoBean // CHANGED
     private JwtTokenProvider jwtTokenProvider;
 
-    @MockBean(name = "userDetailsService")
+    @MockitoBean(name = "userDetailsService") // CHANGED
     private UserDetailsService userDetailsService;
 
-    // --- FIX: Mock the Filter itself so Spring doesn't try to build the real one ---
-    @MockBean
+    @MockitoBean // CHANGED
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
