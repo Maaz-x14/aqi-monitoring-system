@@ -1,7 +1,8 @@
 package com.aqi.service;
 
+import com.aqi.dto.aqi.AdminCityDto;
 import com.aqi.dto.aqi.AqiDataDto;
-import com.aqi.dto.aqi.RunRecommendationDto; // New DTO
+import com.aqi.dto.aqi.RunRecommendationDto;
 import com.aqi.entity.AqiDataPoint;
 import com.aqi.exception.ResourceNotFoundException;
 import com.aqi.repository.AqiDataPointRepository;
@@ -9,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import com.aqi.dto.aqi.AdminCityDto;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,7 +27,7 @@ public class AqiService {
     @Autowired
     private OpenMeteoApiClient apiClient;
 
-    // ... (Your CITY_COORDS map stays here) ...
+    // Map of top 20 Pakistani cities
     private static final Map<String, double[]> CITY_COORDS = Map.ofEntries(
             Map.entry("Karachi", new double[]{24.8607, 67.0011}),
             Map.entry("Lahore", new double[]{31.5497, 74.3436}),
@@ -77,27 +77,21 @@ public class AqiService {
                         d.pm25(), d.pm10(), d.co(), d.no2(), d.so2(), d.o3(),
                         d.timestamp(),
                         true,
-                        generateHealthAdvice(d.aqi(), d.pm25(), d.o3()) // Calculate advice for forecast too!
+                        generateHealthAdvice(d.aqi(), d.pm25(), d.o3())
                 ))
                 .collect(Collectors.toList());
     }
 
-    // --- NEW FEATURE: Best Time to Run ---
     public RunRecommendationDto getRunRecommendation(String city) {
-        // 1. Get the Forecast
         List<AqiDataDto> forecast = getForecast(city);
 
-        // --- FIX: Check for empty data caused by API failure ---
         if (forecast.isEmpty()) {
-            // Throw a 503 Service Unavailable instead of 404
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "External weather service is currently unreachable.");
         }
-        // -------------------------------------------------------
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime tomorrow = now.plusHours(24);
 
-        // 2. Filter for the next 24 hours
         return forecast.stream()
                 .filter(d -> d.getTimestamp().isAfter(now) && d.getTimestamp().isBefore(tomorrow))
                 .min(Comparator.comparingDouble(AqiDataDto::getAqiValue))
@@ -117,13 +111,61 @@ public class AqiService {
                 .orElseThrow(() -> new ResourceNotFoundException("Could not generate recommendation based on available data"));
     }
 
-    // --- HELPER: Health Advice Engine ---
+    // --- ADMIN DASHBOARD FEATURE (FIXED: SEQUENTIAL + DELAY) ---
+    public List<AdminCityDto> getAdminDashboardData() {
+        // Use regular stream() instead of parallelStream() to avoid rate limiting
+        return CITY_COORDS.entrySet().stream().map(entry -> {
+            String city = entry.getKey();
+            double[] coords = entry.getValue();
+
+            try {
+                // Politeness delay: Wait 200ms between API calls
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            try {
+                // 1. Get Current Data (Fast, from DB)
+                AqiDataDto current = null;
+                try {
+                    current = getCurrentAqi(city);
+                } catch (Exception e) {
+                    // Log silently or handle if needed
+                }
+
+                // 2. Get Forecast & Recommendation (Slow, from API)
+                List<AqiDataDto> forecast = null;
+                RunRecommendationDto recommendation = null;
+                try {
+                    forecast = getForecast(city);
+                    recommendation = getRunRecommendation(city);
+                } catch (Exception e) {
+                    System.err.println("Error getting forecast for " + city + ": " + e.getMessage());
+                }
+
+                return AdminCityDto.builder()
+                        .city(city)
+                        .latitude(coords[0])
+                        .longitude(coords[1])
+                        .current(current)
+                        .forecast(forecast)
+                        .recommendation(recommendation)
+                        .build();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).collect(Collectors.toList());
+    }
+    // -----------------------------------------------------------
+
     private String generateHealthAdvice(Double aqi, Double pm25, Double o3) {
         if (aqi == null) return "No data available.";
 
         StringBuilder advice = new StringBuilder();
 
-        // Base AQI Advice
         if (aqi > 300) {
             advice.append("Emergency conditions. Avoid all outdoor exertion. ");
         } else if (aqi > 200) {
@@ -138,7 +180,6 @@ public class AqiService {
             advice.append("Air quality is Good. Enjoy the outdoors! ");
         }
 
-        // Pollutant Specific Advice
         if (pm25 != null && pm25 > 50) {
             advice.append("High PM2.5 detected - consider wearing a mask. ");
         }
@@ -162,7 +203,7 @@ public class AqiService {
                 dp.getO3(),
                 dp.getTimestamp(),
                 dp.isForecast(),
-                generateHealthAdvice(dp.getAqiValue(), dp.getPm25(), dp.getO3()) // Add Advice
+                generateHealthAdvice(dp.getAqiValue(), dp.getPm25(), dp.getO3())
         );
     }
 
@@ -180,43 +221,5 @@ public class AqiService {
             if (key.equalsIgnoreCase(str)) return key;
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
-    }
-
-    public List<AdminCityDto> getAdminDashboardData() {
-        return CITY_COORDS.entrySet().parallelStream().map(entry -> { // Changed to entrySet() to get coords easily
-            String city = entry.getKey();
-            double[] coords = entry.getValue(); // Get coords directly
-
-            try {
-                AqiDataDto current = null;
-                try {
-                    current = getCurrentAqi(city);
-                } catch (Exception e) {
-                    System.err.println("Error getting current data for " + city);
-                }
-
-                List<AqiDataDto> forecast = null;
-                RunRecommendationDto recommendation = null;
-                try {
-                    forecast = getForecast(city);
-                    recommendation = getRunRecommendation(city);
-                } catch (Exception e) {
-                    System.err.println("Error getting forecast for " + city);
-                }
-
-                return AdminCityDto.builder()
-                        .city(city)
-                        .latitude(coords[0])  // Set Lat
-                        .longitude(coords[1]) // Set Lon
-                        .current(current)
-                        .forecast(forecast)
-                        .recommendation(recommendation)
-                        .build();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
-        }).collect(Collectors.toList());
     }
 }

@@ -58,6 +58,7 @@ public class AqiDataPoller {
 
     @Scheduled(fixedRate = 900000, initialDelay = 5000)
     public void pollAqiData() {
+        System.out.println("Network Preference: " + System.getProperty("java.net.preferIPv4Stack"));
         System.out.println("--- [AQI Poller] Polling Detailed Data ---");
 
         for (CityLocation location : CITIES) {

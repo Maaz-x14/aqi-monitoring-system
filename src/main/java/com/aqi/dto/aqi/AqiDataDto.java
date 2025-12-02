@@ -25,5 +25,6 @@ public class AqiDataDto {
     private LocalDateTime timestamp;
     private boolean isForecast;
 
+    // --- THIS WAS MISSING ---
     private String healthAdvice;
 }
