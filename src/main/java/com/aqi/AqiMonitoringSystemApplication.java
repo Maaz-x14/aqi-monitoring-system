@@ -10,24 +10,39 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class AqiMonitoringSystemApplication {
 
     static {
-        // The Nuclear Option for Network Issues
+        // Fix for IPv6 issues on some networks
         System.setProperty("java.net.preferIPv4Stack", "true");
     }
 
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.load();
+        // 1. Try to load .env file, but don't crash if it's missing (Production)
+        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 
-        // Load existing keys...
-        System.setProperty("DB_PASSWORD", dotenv.get("DB_PASSWORD"));
-        System.setProperty("MAIL_HOST", dotenv.get("MAIL_HOST"));
-        System.setProperty("MAIL_PORT", dotenv.get("MAIL_PORT"));
-        System.setProperty("MAIL_EMAIL", dotenv.get("MAIL_EMAIL"));
-        System.setProperty("MAIL_PASSWORD", dotenv.get("MAIL_PASSWORD"));
-        System.setProperty("JWT_SECRET", dotenv.get("JWT_SECRET"));
-        System.setProperty("WAQI_API_KEY", dotenv.get("WAQI_API_KEY"));
-        System.setProperty("GROQ_API_KEY", dotenv.get("Air-Quality-key"));
-        // --------------------------
+        // 2. Load variables with priority: System Env -> .env File
+        setSystemProperty("DB_PASSWORD", dotenv);
+        setSystemProperty("MAIL_HOST", dotenv);
+        setSystemProperty("MAIL_PORT", dotenv);
+        setSystemProperty("MAIL_EMAIL", dotenv);
+        setSystemProperty("MAIL_PASSWORD", dotenv);
+        setSystemProperty("JWT_SECRET", dotenv);
+        setSystemProperty("WAQI_API_KEY", dotenv);
+        setSystemProperty("GROQ_API_KEY", dotenv);
 
         SpringApplication.run(AqiMonitoringSystemApplication.class, args);
+    }
+
+    private static void setSystemProperty(String key, Dotenv dotenv) {
+        // Priority 1: Check if the OS environment has it (Railway/Docker)
+        String value = System.getenv(key);
+
+        // Priority 2: If not in OS, check the .env file (Localhost)
+        if (value == null || value.isEmpty()) {
+            value = dotenv.get(key);
+        }
+
+        // If found in either, set it as a Java System Property so Spring can see it
+        if (value != null) {
+            System.setProperty(key, value);
+        }
     }
 }
