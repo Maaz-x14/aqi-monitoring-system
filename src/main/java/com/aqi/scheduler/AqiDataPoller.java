@@ -63,6 +63,7 @@ public class AqiDataPoller {
 
         for (CityLocation location : CITIES) {
             try {
+                Thread.sleep(2000);
                 Optional<OpenMeteoApiClient.AirQualityData> dataOpt =
                         apiClient.getCurrentAirQuality(location.lat, location.lon);
 
