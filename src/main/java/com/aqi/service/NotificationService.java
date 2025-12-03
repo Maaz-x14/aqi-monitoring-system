@@ -64,44 +64,71 @@ public class NotificationService {
 
     @Async
     public void sendAqiAlert(String toEmail, String city, Double aqiValue) {
-        // Dynamic subject line based on severity (simple logic)
-        String icon = aqiValue > 200 ? "⛔" : "⚠️";
+        boolean isSevere = aqiValue > 200;
+        String icon = isSevere ? "⛔" : "⚠️";
         String subject = String.format("%s ALERT: Hazardous Air in %s (AQI %.0f)", icon, city, aqiValue);
 
-        // Determine context based on value (Basic logic, expand this later)
-        String severityColor = aqiValue > 200 ? "#dc2626" : "#d97706"; // Red-600 or Amber-600
-        String statusText = aqiValue > 200 ? "Very Unhealthy" : "Unhealthy";
-        String advice = aqiValue > 200 ? "Avoid ALL outdoor exertion. Keep windows closed." : "Sensitive groups should wear a mask. Limit outdoor exercise.";
+        String severityColor = isSevere ? "#dc2626" : "#d97706";
+        String lightBgColor = isSevere ? "#fef2f2" : "#fffbeb";
+        String borderColor = isSevere ? "#fca5a5" : "#fcd34d";
+
+        String statusText = isSevere ? "Very Unhealthy" : "Unhealthy";
+        String advice = isSevere
+                ? "Avoid ALL outdoor exertion. Keep windows closed."
+                : "Sensitive groups should wear a mask. Limit outdoor exercise.";
+
+        // TEMPLATE has 10 placeholders:
+        // 1. Border Top Color
+        // 2. Heading Color
+        // 3. City Name
+        // 4. AQI Value Color
+        // 5. AQI Value (Number)
+        // 6. Status Text
+        // 7. Recommendation Box BG Color
+        // 8. Recommendation Box Border Color
+        // 9. Advice Text
+        // 10. Dashboard Link
 
         String body = String.format("""
-                <html>
-                <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.6;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; border-top: 6px solid %s;">
-                        <h2 style="color: %s; margin-top: 0;">Air Quality Alert</h2>
-                        <p>Heads up! The air quality in <strong>%s</strong> has dropped significantly.</p>
-    
-                        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                            <p style="margin: 0; font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">Current AQI</p>
-                            <p style="margin: 5px 0; font-size: 48px; font-weight: bold; color: %s;">%.0f</p>
-                            <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">%s</p>
-                        </div>
-    
-                        <h3>Recommended Action:</h3>
-                        <div style="background-color: %s; color: #991b1b; padding: 15px; border-radius: 6px; border: 1px solid %s;">
-                            😷 <strong>%s</strong>
-                        </div>
-    
-                        <div style="text-align: center; margin-top: 25px;">
-                            <a href="%s/dashboard" style="color: #2563eb; text-decoration: none; font-weight: 600;">View Live Dashboard &rarr;</a>
-                        </div>
-    
-                        <p style="margin-top: 30px; font-size: 12px; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                            Automated alert from AQI Monitoring System.
-                        </p>
+            <html>
+            <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.6;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; border-top: 6px solid %s;">
+                    <h2 style="color: %s; margin-top: 0;">Air Quality Alert</h2>
+                    <p>Heads up! The air quality in <strong>%s</strong> has dropped significantly.</p>
+                    
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                        <p style="margin: 0; font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">Current AQI</p>
+                        <p style="margin: 5px 0; font-size: 48px; font-weight: bold; color: %s;">%.0f</p>
+                        <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">%s</p>
                     </div>
-                </body>
-                </html>
-            """, severityColor, severityColor, city, severityColor, aqiValue, statusText, advice, APP_URL);
+                    
+                    <h3>Recommended Action:</h3>
+                    <div style="background-color: %s; color: #991b1b; padding: 15px; border-radius: 6px; border: 1px solid %s;">
+                        😷 <strong>%s</strong>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 25px;">
+                        <a href="%s/dashboard" style="color: #2563eb; text-decoration: none; font-weight: 600;">View Live Dashboard &rarr;</a>
+                    </div>
+                    
+                    <p style="margin-top: 30px; font-size: 12px; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                        Automated alert from OxyGen AI Monitoring System.
+                    </p>
+                </div>
+            </body>
+            </html>
+            """,
+                severityColor, // 1
+                severityColor, // 2
+                city,          // 3
+                severityColor, // 4
+                aqiValue,      // 5
+                statusText,    // 6
+                lightBgColor,  // 7
+                borderColor,   // 8
+                advice,        // 9
+                APP_URL        // 10
+        );
 
         sendEmail(toEmail, subject, body);
     }
