@@ -36,9 +36,11 @@ public class MailConfig {
         props.put("mail.smtp.auth", "true");
 
         // TIMEOUTS (Crucial for cloud environments to fail fast)
-        props.put("mail.smtp.connectiontimeout", "5000"); // 5 seconds
-        props.put("mail.smtp.timeout", "5000"); // 5 seconds
-        props.put("mail.smtp.writetimeout", "5000"); // 5 seconds
+        props.put("mail.smtp.connectiontimeout", "10000");
+        props.put("mail.smtp.timeout", "10000");
+        props.put("mail.smtp.writetimeout", "10000");
+
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");// 5 seconds
 
         // SSL CONFIGURATION
         if (port == 465) {
