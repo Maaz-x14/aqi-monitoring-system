@@ -42,10 +42,16 @@ public class MailConfig {
 
         // SSL CONFIGURATION
         if (port == 465) {
-            System.out.println("🔒 Configuring SSL for Gmail (Port 465)");
+            System.out.println("🔒 Configuring SSL for Gmail (Port 465) with explicit SocketFactory");
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.starttls.enable", "false");
-            // Explicitly trust Gmail (sometimes needed in containers)
+
+            // --- FIX: Explicitly set the socket factory ---
+            props.put("mail.smtp.socketFactory.port", "465");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail.smtp.socketFactory.fallback", "false");
+
+            // Explicitly trust Gmail
             props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
         } else {
             System.out.println("🔓 Configuring TLS for Gmail (Port 587)");
