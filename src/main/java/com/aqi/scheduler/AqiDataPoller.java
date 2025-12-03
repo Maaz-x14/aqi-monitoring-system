@@ -93,9 +93,9 @@ public class AqiDataPoller {
 
                         for (User user : usersToAlert) {
                             // Check if we sent an alert in the last 24 hours
-                            boolean shouldAlert = true;
-//                            boolean shouldAlert = user.getLastAlertSent() == null ||
-//                                    ChronoUnit.HOURS.between(user.getLastAlertSent(), LocalDateTime.now()) >= 24;
+//                            boolean shouldAlert = true;
+                            boolean shouldAlert = user.getLastAlertSent() == null ||
+                                    ChronoUnit.HOURS.between(user.getLastAlertSent(), LocalDateTime.now()) >= 24;
 
                             if (shouldAlert) {
                                 notificationService.sendAqiAlert(user.getEmail(), location.name(), data.aqi());
