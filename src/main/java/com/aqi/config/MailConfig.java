@@ -11,10 +11,10 @@ import java.util.Properties;
 @Configuration
 public class MailConfig {
 
-    @Value("${MAIL_HOST:smtp.gmail.com}")
+    @Value("${MAIL_HOST}")
     private String host;
 
-    @Value("${MAIL_PORT:465}")
+    @Value("${MAIL_PORT}")
     private int port;
 
     @Value("${MAIL_EMAIL}")
@@ -35,30 +35,23 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
 
-        // TIMEOUTS (Crucial for cloud environments to fail fast)
+        // TIMEOUTS
         props.put("mail.smtp.connectiontimeout", "10000");
         props.put("mail.smtp.timeout", "10000");
         props.put("mail.smtp.writetimeout", "10000");
 
-        props.put("mail.smtp.ssl.protocols", "TLSv1.2");// 5 seconds
-
-        // SSL CONFIGURATION
-        if (port == 465) {
-            System.out.println("🔒 Configuring SSL for Gmail (Port 465) with explicit SocketFactory");
+        // TLS Configuration for Brevo (Port 587)
+        // Brevo usually prefers STARTTLS over implicit SSL
+        if (port == 587) {
+            System.out.println("🔓 Configuring STARTTLS for Brevo (Port 587)");
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.starttls.required", "true");
+            props.put("mail.smtp.ssl.enable", "false"); // Do NOT force SSL on 587
+        } else if (port == 465) {
+            // Fallback if you try 465 with Brevo (supports SSL wrapper)
+            System.out.println("🔒 Configuring SSL for Port 465");
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.starttls.enable", "false");
-
-            // --- FIX: Explicitly set the socket factory ---
-            props.put("mail.smtp.socketFactory.port", "465");
-            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            props.put("mail.smtp.socketFactory.fallback", "false");
-
-            // Explicitly trust Gmail
-            props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-        } else {
-            System.out.println("🔓 Configuring TLS for Gmail (Port 587)");
-            props.put("mail.smtp.ssl.enable", "false");
-            props.put("mail.smtp.starttls.enable", "true");
         }
 
         props.put("mail.debug", "true");
