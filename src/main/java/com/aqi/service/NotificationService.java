@@ -1,56 +1,72 @@
 package com.aqi.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class NotificationService {
 
     @Autowired
-    private JavaMailSender mailSender;
+    private RestTemplate restTemplate;
 
-    // --- START NEW METHOD ---
+    @Value("${BREVO_API_KEY}")
+    private String brevoApiKey;
+
+    @Value("${MAIL_EMAIL}")
+    private String senderEmail; // Your verified sender email
+
+    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+
     @Async
-    public void sendWelcomeEmail(String email) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("Welcome to the AQI Monitoring System!");
-            message.setText(String.format(
-                    "Hello,\n\n" +
-                            "Thank you for registering with the AQI Monitoring System.\n\n" +
-                            "Don't forget to log in and set your home city to receive alerts!\n\n" +
-                            "Stay safe!"
-            ));
-            mailSender.send(message);
-            System.out.println("[NotificationService] Welcome email sent to " + email);
-        } catch (Exception e) {
-            System.err.println("Failed to send welcome email: " + e.getMessage());
-        }
+    public void sendWelcomeEmail(String toEmail) {
+        sendEmail(toEmail, "Welcome to AQI Monitor",
+                "Hello,\n\nThank you for registering! Login to set your city.\n\nStay safe!");
     }
-    // --- END NEW METHOD ---
 
     @Async
-    public void sendAqiAlert(String email, String city, Double aqiValue) {
+    public void sendAqiAlert(String toEmail, String city, Double aqiValue) {
+        String body = String.format(
+                "Hello,\n\nThe AQI in %s is %.0f (Unhealthy).\nPlease wear a mask!\n\nStay safe!",
+                city, aqiValue
+        );
+        sendEmail(toEmail, "High AQI Alert: " + city, body);
+    }
+
+    private void sendEmail(String toEmail, String subject, String content) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("AQI Alert for " + city);
-            message.setText(String.format(
-                    "Hello,\n\n" +
-                            "The current Air Quality Index (AQI) for %s is %.2f, which is considered unhealthy.\n\n" +
-                            "Please take necessary precautions like wearing a mask and staying indoors if possible.\n\n" +
-                            "Stay safe!",
-                    city, aqiValue
-            ));
-            mailSender.send(message);
-            System.out.println("[NotificationService] AQI alert for " + city + " sent to " + email);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoApiKey);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("sender", Map.of("name", "AQI Monitor", "email", senderEmail));
+            body.put("to", List.of(Map.of("email", toEmail)));
+            body.put("subject", subject);
+            body.put("textContent", content);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(BREVO_API_URL, request, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                System.out.println("✅ Email sent successfully via API to " + toEmail);
+            } else {
+                System.err.println("⚠️ Brevo API Error: " + response.getBody());
+            }
+
         } catch (Exception e) {
-            // Log error but don't throw - we don't want email failures to break the app
-            System.err.println("Failed to send email notification: " + e.getMessage());
+            System.err.println("❌ Failed to send email via API: " + e.getMessage());
         }
     }
 }
