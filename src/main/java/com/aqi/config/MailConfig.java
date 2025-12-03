@@ -11,16 +11,14 @@ import java.util.Properties;
 @Configuration
 public class MailConfig {
 
-    // These @Value annotations will read the System Properties
-    // that we set in our main AqiMonitoringSystemApplication.java
-    @Value("${MAIL_HOST}")
+    @Value("${MAIL_HOST:smtp.gmail.com}")
     private String host;
 
-    @Value("${MAIL_PORT}")
+    @Value("${MAIL_PORT:465}")
     private int port;
 
     @Value("${MAIL_EMAIL}")
-    private String email;
+    private String username;
 
     @Value("${MAIL_PASSWORD}")
     private String password;
@@ -30,15 +28,32 @@ public class MailConfig {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost(host);
         mailSender.setPort(port);
-        mailSender.setUsername(email);
-        mailSender.setPassword(password); // This MUST be your Google "App Password"
+        mailSender.setUsername(username);
+        mailSender.setPassword(password);
 
-        // Set the required mail properties for Gmail
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true"); // So we can see errors in the console
+
+        // TIMEOUTS (Crucial for cloud environments to fail fast)
+        props.put("mail.smtp.connectiontimeout", "5000"); // 5 seconds
+        props.put("mail.smtp.timeout", "5000"); // 5 seconds
+        props.put("mail.smtp.writetimeout", "5000"); // 5 seconds
+
+        // SSL CONFIGURATION
+        if (port == 465) {
+            System.out.println("🔒 Configuring SSL for Gmail (Port 465)");
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.starttls.enable", "false");
+            // Explicitly trust Gmail (sometimes needed in containers)
+            props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+        } else {
+            System.out.println("🔓 Configuring TLS for Gmail (Port 587)");
+            props.put("mail.smtp.ssl.enable", "false");
+            props.put("mail.smtp.starttls.enable", "true");
+        }
+
+        props.put("mail.debug", "true");
 
         return mailSender;
     }
