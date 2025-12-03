@@ -45,7 +45,7 @@ public class NotificationService {
                     <p><strong>Step 1 is crucial:</strong> We need to know where you are to keep you safe. Log in now to set your Home City.</p>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="%s/setting" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                        <a href="%s/settings" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
                             Login & Set City
                         </a>
                     </div>
