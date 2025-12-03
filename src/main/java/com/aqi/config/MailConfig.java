@@ -35,23 +35,24 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
 
-        // TIMEOUTS
-        props.put("mail.smtp.connectiontimeout", "10000");
-        props.put("mail.smtp.timeout", "10000");
-        props.put("mail.smtp.writetimeout", "10000");
+        // Increase timeouts to 15 seconds to rule out slow network
+        props.put("mail.smtp.connectiontimeout", "15000");
+        props.put("mail.smtp.timeout", "15000");
+        props.put("mail.smtp.writetimeout", "15000");
 
-        // TLS Configuration for Brevo (Port 587)
-        // Brevo usually prefers STARTTLS over implicit SSL
-        if (port == 587) {
-            System.out.println("🔓 Configuring STARTTLS for Brevo (Port 587)");
-            props.put("mail.smtp.starttls.enable", "true");
-            props.put("mail.smtp.starttls.required", "true");
-            props.put("mail.smtp.ssl.enable", "false"); // Do NOT force SSL on 587
-        } else if (port == 465) {
-            // Fallback if you try 465 with Brevo (supports SSL wrapper)
-            System.out.println("🔒 Configuring SSL for Port 465");
+        // FORCE TLS 1.2
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+
+        if (port == 465) {
+            System.out.println("🔒 Configuring IMPLICIT SSL for Brevo (Port 465)");
+            // "smtps" behavior on "smtp" protocol
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.starttls.enable", "false");
+        } else {
+            System.out.println("🔓 Configuring STARTTLS (Port " + port + ")");
+            props.put("mail.smtp.ssl.enable", "false");
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.starttls.required", "true");
         }
 
         props.put("mail.debug", "true");
