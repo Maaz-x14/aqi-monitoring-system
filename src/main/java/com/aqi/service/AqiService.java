@@ -47,7 +47,28 @@ public class AqiService {
             Map.entry("Rahim Yar Khan", new double[]{28.4195, 70.2952}),
             Map.entry("Jhang", new double[]{31.2714, 72.3166}),
             Map.entry("Dera Ghazi Khan", new double[]{30.0459, 70.6403}),
-            Map.entry("Gujrat", new double[]{32.5742, 74.0754})
+            Map.entry("Gujrat", new double[]{32.5742, 74.0754}),
+            Map.entry("Sahiwal", new double[]{30.6706, 73.1064}),
+            Map.entry("Okara", new double[]{30.8106, 73.4510}),
+            Map.entry("Kasur", new double[]{31.1156, 74.4467}),
+            Map.entry("Mardan", new double[]{34.1989, 72.0450}),
+            Map.entry("Mingora", new double[]{35.0022, 72.0870}),
+            Map.entry("Nawabshah", new double[]{26.2483, 68.4096}),
+            Map.entry("Mirpur Khas", new double[]{25.5251, 69.0159}),
+            Map.entry("Chiniot", new double[]{31.7167, 72.9833}),
+            Map.entry("Muzaffargarh", new double[]{30.0703, 71.1933}),
+            Map.entry("Jacobabad", new double[]{28.2810, 68.4388}),
+            Map.entry("Sadiqabad", new double[]{28.3090, 70.1265}),
+            Map.entry("Burewala", new double[]{30.1667, 72.6500}),
+            Map.entry("Kotli", new double[]{33.5000, 73.9167}),
+            Map.entry("Muzaffarabad", new double[]{34.3700, 73.4710}),
+            Map.entry("Abbottabad", new double[]{34.1463, 73.2116}),
+            Map.entry("Dera Ismail Khan", new double[]{31.8320, 70.9024}),
+            Map.entry("Charsadda", new double[]{34.1500, 71.7333}),
+            Map.entry("Vehari", new double[]{30.0336, 72.3500}),
+            Map.entry("Hafizabad", new double[]{32.0700, 73.6900}),
+            Map.entry("Kohat", new double[]{33.5869, 71.4414})
+
     );
 
     public AqiDataDto getCurrentAqi(String city) {
