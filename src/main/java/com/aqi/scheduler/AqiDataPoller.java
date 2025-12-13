@@ -53,7 +53,28 @@ public class AqiDataPoller {
             new CityLocation("Rahim Yar Khan", 28.4195, 70.2952),
             new CityLocation("Jhang", 31.2714, 72.3166),
             new CityLocation("Dera Ghazi Khan", 30.0459, 70.6403),
-            new CityLocation("Gujrat", 32.5742, 74.0754)
+            new CityLocation("Gujrat", 32.5742, 74.0754),
+            new CityLocation("Sahiwal", 30.6706, 73.1064),
+            new CityLocation("Okara", 30.8106, 73.4510),
+            new CityLocation("Kasur", 31.1156, 74.4467),
+            new CityLocation("Mardan", 34.1989, 72.0450),
+            new CityLocation("Mingora", 35.0022, 72.0870),
+            new CityLocation("Nawabshah", 26.2483, 68.4096),
+            new CityLocation("Mirpur Khas", 25.5251, 69.0159),
+            new CityLocation("Chiniot", 31.7167, 72.9833),
+            new CityLocation("Muzaffargarh", 30.0703, 71.1933),
+            new CityLocation("Jacobabad", 28.2810, 68.4388),
+            new CityLocation("Sadiqabad", 28.3090, 70.1265),
+            new CityLocation("Burewala", 30.1667, 72.6500),
+            new CityLocation("Kotli", 33.5000, 73.9167),
+            new CityLocation("Muzaffarabad", 34.3700, 73.4710),
+            new CityLocation("Abbottabad", 34.1463, 73.2116),
+            new CityLocation("Dera Ismail Khan", 31.8320, 70.9024),
+            new CityLocation("Charsadda", 34.1500, 71.7333),
+            new CityLocation("Vehari", 30.0336, 72.3500),
+            new CityLocation("Hafizabad", 32.0700, 73.6900),
+            new CityLocation("Kohat", 33.5869, 71.4414)
+
     );
 
     @Scheduled(fixedRate = 900000, initialDelay = 5000)
